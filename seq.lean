@@ -18,13 +18,13 @@ namespace seq
 def const {α} {n} : α → seq α n :=
 function.const _
 
-/-def empty {α} : seq α 0 :=
-fin.elim0-/
+def empty {α} : seq α 0 :=
+fin.elim0
 
 -- TODO: copy vector notation
 universe u
 instance {α : Type u} : has_emptyc (seq α 0) :=
-⟨fin.elim0⟩
+⟨empty⟩
 
 -- Iterates through a sequence backwards using an accumulation function
 def iterate {α β n} (a : seq α n) (b : β) (f : fin n → α → β → β) : β :=
@@ -38,8 +38,8 @@ def iterate {α β n} (a : seq α n) (b : β) (f : fin n → α → β → β) :
 n (le_refl n)
 
 -- Summation of a sequence with elements in an additive monoid
-def sum {α n} [add_monoid α] (a : seq α n) (g : fin n → α → α) : α :=
-a.iterate 0 (λ i ai, (+) (g i ai))
+def sum {α n} [add_monoid α] (a : seq α n) : α :=
+a.iterate 0 (λ _, (+))
 
 instance vector_to_seq {α n} : has_coe (vector α n) (seq α n) :=
 ⟨vector.nth⟩
