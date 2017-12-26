@@ -26,29 +26,32 @@ universe u
 instance {α : Type u} : has_emptyc (seq α 0) :=
 ⟨empty⟩
 
-inductive mem {α n} (a : seq α n) : set α
-| intro (i : fin n) : mem (a i)
+-- Treat sequences as finite sets
+inductive mem {α n} : α → seq α n → Prop
+| intro {a : seq α n} (i : fin n) : mem (a i) a
 
 instance {α : Type u} {n} : has_mem α (seq α n) :=
-⟨flip mem⟩
+⟨mem⟩
 
 def cons {α n} (e : α) (a : seq α n) : seq α (n + 1)
 | ⟨0,     _⟩ := e
 | ⟨i + 1, h⟩ := a ⟨i, nat.le_of_succ_le_succ h⟩
 
 def snoc {α n} (a : seq α n) (e : α) : seq α (n + 1)
-| ⟨i, h⟩ := if h' : i = n then e else a ⟨i, lt_of_le_of_ne (nat.le_of_succ_le_succ h) h'⟩
+| ⟨i, h⟩ :=
+  if h' : i = n then
+    e
+  else
+    a ⟨i, lt_of_le_of_ne (nat.le_of_succ_le_succ h) h'⟩
 
--- Iterates through a sequence backwards using an accumulation function
+-- Iterates through a sequence using an accumulation function
 def iterate {α β n} (a : seq α n) (b : β) (f : fin n → α → β → β) : β :=
 @nat.rec (λ i, i ≤ n → β)
-  -- Return the default value on n = 0
   (λ _, b)
-  -- Iterate on the initial j = i - 1 subsequence, and then apply f on a i
   (λ j r h,
     let i : fin n := ⟨j, h⟩ in
     f i (a i) $ r $ le_of_lt h)
-n (le_refl n)
+  n (le_refl n)
 
 -- Summation of a sequence with elements in an additive monoid
 def sum {α n} [add_monoid α] (a : seq α n) : α :=
