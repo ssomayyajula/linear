@@ -3,17 +3,16 @@ import .vector_space
 open vector_space
 
 universes u v
-
-variables {V : Type u} {F : Type v} [f : field F] [vs : @vector_space V F f]
+variables {V : Type u} {F : Type v} [field F] [vector_space V F]
 
 class subspace (U : set V) : Prop :=
-(contains_zero : vs.zero ∈ U)
+(contains_zero : (0 : V) ∈ U)
 (add_closed  : ∀ {u v : V}, u ∈ U → v ∈ U → u + v ∈ U)
 (mul_closed  : ∀ (a : F) {u : V}, u ∈ U → a ⋅ u ∈ U)
 
 open subspace
 
-instance subspace_is_vector_space (U : set V) [@subspace _ F f vs U] : vector_space (subtype U) F :=
+instance subspace_is_vector_space {U : set V} [@subspace _ F _ _ U] : vector_space (subtype U) F :=
 { add        := λ⟨u, pu⟩ ⟨v, pv⟩, ⟨u + v, add_closed _ pu pv⟩,
   neg        := λ⟨u, pu⟩, ⟨-u, by {rw ←neg_one_scalar_mul_neg u, exact mul_closed (-1) pu}⟩,
   scalar_mul := λ a ⟨u, pu⟩, ⟨a ⋅ u, mul_closed a pu⟩,
@@ -34,20 +33,19 @@ instance subspace_is_vector_space (U : set V) [@subspace _ F f vs U] : vector_sp
 inductive sum_of_subsets {V F} [field F] [vector_space V F] (U₁ U₂ : set V) : set V
 | intro {u v : V} : u ∈ U₁ → v ∈ U₂ → sum_of_subsets (u + v)
 
-instance {V F} [field F] [vector_space V F] : has_add (set V) :=
+instance : has_add (set V) :=
 ⟨@sum_of_subsets _ F _ _⟩
 
 -- Sum of subspaces is a subspace
-instance sum_of_subsets_is_subspace {U₁ U₂ : set V} [@subspace _ F f vs U₁] [@subspace _ F _ _ U₂] :
+instance sum_of_subsets_is_subspace {U₁ U₂ : set V} [@subspace _ F _ _ U₁] [@subspace _ F _ _ U₂] :
 subspace (U₁ + U₂) :=
 { contains_zero := begin
-    -- We will instead show 0 + 0 ∈ U₁ + U₂
-    rw ←add_zero vs.zero,
+    -- WTS 0 + 0 ∈ U₁ + U₂
+    rw ←add_zero (0 : V),
     -- This is trivial, because 0 ∈ U₁ and 0 ∈ U₂
     split, repeat { apply contains_zero }
   end,
   add_closed := begin
-    -- Unpack the given data
     introv h1 h2,
     cases h1 with u1 u2,
     cases h2 with v1 v2,
@@ -62,42 +60,42 @@ subspace (U₁ + U₂) :=
     split, all_goals {apply add_closed, assumption, assumption}
   end,
   mul_closed := begin
-    -- We instead show that a ⋅ u + a ⋅ v ∈ U₁ + U₂
     intros a _ h1,
     cases h1 with u v,
-    show a ⋅ (u + v) ∈ U₁ + U₂,
-    rw scalar_mul_left_distrib a u v,
+    show a ⋅ (u + v) ∈ U₁ + U₂, simp,
+    -- WTS a ⋅ u + a ⋅ v ∈ U₁ + U₂
     -- This is trivial since a ⋅ u ∈ U₁ and a ⋅ v ∈ U₂
     split, all_goals {apply mul_closed, assumption}
   end }
 
--- This is {0}, which is the smallest subspace
-inductive zero_set {V F} [field F] [vector_space V F] : set V
-| intro : zero_set 0
+-- A better-behaved singleton set
+inductive just {α} (a : α) : set α
+| intro : just a
 
-instance zero_subspace : @subspace V F _ _ (@zero_set V F f vs) :=
+instance zero_subspace : @subspace V F _ _ (just 0) :=
 { contains_zero := by split,
   add_closed := begin
     introv h1 h2,
     cases h1, cases h2,
-    rw show vs.zero + vs.zero = 0, from add_zero 0,
-    apply zero_set.intro
+    show (0 : V) + 0 ∈ just (0 : V),
+    simp, split
   end,
   mul_closed := begin
     intros a _ h,
     cases h,
-    rw scalar_mul_zero_zero a, split
+    show a ⋅ (0 : V) ∈ just (0 : V),
+    simp, split
   end }
 
 -- A vector space is the largest subspace of itself, of course
-instance total_space : @subspace _ F f vs (@set.univ V) :=
+instance total_space : @subspace V F _ _ set.univ :=
 { contains_zero :=            trivial,
   add_closed    := λ _ _ _ _, trivial,
   mul_closed    := λ _ _ _,   trivial }
 
-lemma set.empty {V} {a : V} : ¬set.mem a (λ _, false) :=
+lemma set.empty {V} (a : V) : ¬a ∈ (∅ : set V) :=
 id
 
-lemma empty_not_subspace : ¬(@subspace V F f vs ∅) :=
+lemma empty_not_subspace : ¬(@subspace V F _ _ ∅) :=
 assume h : subspace ∅,
-absurd h.contains_zero $ @set.empty _ 0
+absurd h.contains_zero (set.empty 0)

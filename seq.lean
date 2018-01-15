@@ -2,7 +2,7 @@ import data.stream
 import data.vector
 
 -- /Sequences/ of length n with elements in α
-def seq (α) (n) :=
+def seq (α n) :=
 fin n → α
 
 -- Streams (infinite sequences) are a subtype of finite ones (spooky)
@@ -15,7 +15,7 @@ notation F `∞`   := stream F
 
 namespace seq
 
-def const {α} {n} : α → seq α n :=
+def const {α n} : α → seq α n :=
 function.const _
 
 def empty {α} : seq α 0 :=
@@ -27,6 +27,7 @@ instance {α : Type u} : has_emptyc (seq α 0) :=
 ⟨empty⟩
 
 -- Treat sequences as finite sets
+-- e ∈ a ↔ ∃ i, e = a i
 inductive mem {α n} : α → seq α n → Prop
 | intro {a : seq α n} (i : fin n) : mem (a i) a
 
@@ -57,10 +58,13 @@ def iterate {α β n} (a : seq α n) (b : β) (f : fin n → α → β → β) :
 def sum {α n} [add_monoid α] (a : seq α n) : α :=
 a.iterate 0 (λ _, (+))
 
+instance {α n} [has_zero α] : has_zero (seq α n) :=
+⟨const 0⟩
+
+end seq
+
 instance vector_to_seq {α n} : has_coe (vector α n) (seq α n) :=
 ⟨vector.nth⟩
 
 instance seq_to_vector {α n} : has_coe (seq α n) (vector α n) :=
 ⟨vector.of_fn⟩
-
-end seq
